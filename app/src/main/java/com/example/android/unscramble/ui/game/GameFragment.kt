@@ -59,6 +59,9 @@ class GameFragment : Fragment() {
         // Specify the fragment view as the lifecycle owner of the binding.
         // This is used so that the binding can observe LiveData updates
         binding.lifecycleOwner = viewLifecycleOwner
+        // cold booting 시에 ViewModel 에서 초기화된 값들이 data binding 으로
+        // 화면에 미처 표시되지 못하는 경우를 막기 위해..
+        binding.executePendingBindings()
 
         // Setup a click listener for the Submit and Skip buttons.
         binding.submit.setOnClickListener { onSubmitWord() }
