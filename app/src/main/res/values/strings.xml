@@ -19,7 +19,7 @@
     <string name="instructions">Unscramble the word using all the letters.</string>
     <string name="skip">Skip</string>
     <string name="submit">Submit</string>
-    <string name="score">Score: %d</string>
+    <string name="score">Score: %d / High: %d</string>
     <string name="word_count">%d of %d words</string>
     <string name="enter_your_word">Enter your word</string>
     <string name="congratulations">Congratulations!</string>

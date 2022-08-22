@@ -16,28 +16,43 @@
 
 package com.example.android.unscramble.ui.game
 
+import android.app.Application
+import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.TtsSpan
 import android.util.Log
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.savedstate.SavedStateRegistryOwner
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.random.Random
 
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
+class GameViewModel(
+    private val stateHandler: SavedStateHandle,
+    private val repository: GameRepository
+) : ViewModel() {
+
     private val _score = stateHandler.getMutableStateFlow("score", 0)
     val score: StateFlow<Int>
         get() = _score.asStateFlow()
+
+    val highScore: StateFlow<Int> = repository.highScore
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
 
     private val _currentWordCount = stateHandler.getMutableStateFlow("currentWordCount", 0)
     val currentWordCount: StateFlow<Int>
@@ -77,7 +92,7 @@ class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
                 tempWord.shuffle()
             } while (String(tempWord) == value)
 
-            Log.d("Unscramble", "currentWord= $currentWord")
+            Log.d("Unscramble", "currentWord= $value")
             _currentScrambledWord.value = String(tempWord)
             _currentWordCount.value += 1
             wordsList = wordsList + currentWord
@@ -99,6 +114,10 @@ class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
      */
     private fun increaseScore() {
         _score.value += SCORE_INCREASE
+
+        viewModelScope.launch {
+            repository.recordScore(_score.value)
+        }
     }
 
     /**
@@ -126,4 +145,26 @@ class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
             true
         } else false
     }
+}
+
+class GameViewModelFactory(
+    private val application: Application,
+    owner: SavedStateRegistryOwner,
+    defaultArgs: Bundle? = null
+) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    override fun <T : ViewModel> create(
+        key: String,
+        modelClass: Class<T>,
+        handle: SavedStateHandle
+    ): T {
+        require(modelClass.isAssignableFrom(GameViewModel::class.java)) {
+            "Unknown ViewModel class"
+        }
+        @Suppress("UNCHECKED_CAST")
+        return GameViewModel(
+            stateHandler = handle,
+            repository = GameRepository(application)
+        ) as T
+    }
+
 }
