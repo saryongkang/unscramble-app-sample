@@ -23,21 +23,32 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.android.unscramble.data.GameRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 import kotlin.random.Random
 
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
+class GameViewModel @Inject constructor(
+    private val stateHandler: SavedStateHandle,
+    private val repository: GameRepository
+) : ViewModel() {
+
     private val _score = stateHandler.getMutableStateFlow("score", 0)
     val score: StateFlow<Int>
         get() = _score.asStateFlow()
+
+    val highScore: StateFlow<Int> = repository.highScore.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(), 0
+    )
 
     private val _currentWordCount = stateHandler.getMutableStateFlow("currentWordCount", 0)
     val currentWordCount: StateFlow<Int>
@@ -77,7 +88,7 @@ class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
                 tempWord.shuffle()
             } while (String(tempWord) == value)
 
-            Log.d("Unscramble", "currentWord= $currentWord")
+            Log.d("Unscramble", "currentWord= $value")
             _currentScrambledWord.value = String(tempWord)
             _currentWordCount.value += 1
             wordsList = wordsList + currentWord
@@ -99,6 +110,10 @@ class GameViewModel(private val stateHandler: SavedStateHandle) : ViewModel() {
      */
     private fun increaseScore() {
         _score.value += SCORE_INCREASE
+
+        viewModelScope.launch {
+            repository.updateScore(_score.value)
+        }
     }
 
     /**

@@ -18,6 +18,7 @@
 buildscript {
     ext {
         kotlin_version = "1.7.10"
+        dagger_version = "2.43.2"
     }
 
     repositories {
