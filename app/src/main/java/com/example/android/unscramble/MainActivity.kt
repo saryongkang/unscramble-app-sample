@@ -18,19 +18,14 @@ package com.example.android.unscramble
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.android.unscramble.di.GameComponent
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Creates an Activity that hosts the Game fragment in the app
  */
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    lateinit var gameComponent: GameComponent
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        val appComponent = (applicationContext as GameApplication).appComponent
-        gameComponent = appComponent.gameComponent().create()
-        appComponent.inject(this)
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
     }
